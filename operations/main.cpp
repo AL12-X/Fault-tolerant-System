@@ -38,10 +38,14 @@ void ft_sub(const T& a, const T& b) {
     std::cout << "Equal\n";
 }
 
+#include <bitset>
+
 template <typename T>
 T ft_inv(const T& a, const T& b) {
     T tmp = a ^ b;
-    int len = sizeof(T)*8;
+    std::bitset<sizeof(T)*8> bit_mask1;
+    T ch = -1;
+    tmp = tmp^ch;
     return tmp;
 }
 
@@ -66,12 +70,5 @@ int main() {
     ft_mul(a, b, p);
     ft_mul_ult(a, b);
     ft_sub(b, a);
-    {
-    int at = 1;
-    int bt = 7;
-    at = at^bt;
-    at = at^ft_xor(at, bt);
-    std::cout << at << '\n';
-    }
     return 0;
 }
