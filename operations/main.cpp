@@ -43,7 +43,6 @@ void ft_sub(const T& a, const T& b) {
 template <typename T>
 T ft_inv(const T& a, const T& b) {
     T tmp = a ^ b;
-    std::bitset<sizeof(T)*8> bit_mask1;
     T ch = -1;
     tmp = tmp^ch;
     return tmp;
@@ -70,5 +69,7 @@ int main() {
     ft_mul(a, b, p);
     ft_mul_ult(a, b);
     ft_sub(b, a);
+
+
     return 0;
 }
