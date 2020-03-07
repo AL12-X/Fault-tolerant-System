@@ -45,6 +45,7 @@ T ft_inv(const T& a, const T& b) {
     T tmp = a ^ b;
     T ch = -1;
     tmp = tmp^ch;
+
     return tmp;
 }
 
@@ -61,6 +62,17 @@ T ft_xor(const T& a, const T& b) {
     return tmp;
 }
 
+template <typename T>
+T ft_conj(const T& a, const T& b) {
+    T cnj = a & b;
+    T tmp = a & (~b);
+    tmp = tmp | cnj;
+    tmp = a ^ tmp;
+    return tmp;
+}
+
+
+
 int main() {
     int a = 3234;
     int b = 8521;
@@ -70,6 +82,17 @@ int main() {
     ft_mul_ult(a, b);
     ft_sub(b, a);
 
+    // short at = 7;
+    // // short bt = ~at;
+    // std::cout << a << '\t' << ~a << '\n';
+    // b = ~a^ft_inv(a ,~a);
+    // std::cout << b << '\n';
+
+    std::cout << a << '\t' << b << '\n';
+    int tmp = a & b;
+    std::cout << tmp << '\t';
+    tmp = tmp^ft_conj(a, b);
+    std::cout << tmp << '\n';
 
     return 0;
 }
