@@ -3,7 +3,6 @@
 #include <climits>
 #include <mutex>
 #include <stdlib.h>     /* srand, rand */
-#include <time.h>       /* time */
 
 enum class ErrorType {
     randomBitFlip
@@ -26,9 +25,9 @@ void ramErrorGenerator(ErrorType errType, T* ptr, int size, int numIterations, i
                 if (enableLogging) {
                     std::lock_guard<std::mutex> lock(mutex);
 
-                    std::cout << "Error generated on addr " << (ptr + offsetInElement)
+                    std::cout << "[RAM error on addr " << (ptr + offsetInElement)
                         << " (element " << elementIndex << ", bit " << (typeSizeInBits - offsetInElement)
-                        << ")." << std::endl;
+                        << ")]" << std::endl;
                 }
                 break;
         }

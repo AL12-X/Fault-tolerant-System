@@ -1,91 +1,61 @@
-// gcc -ffixed-ebx
-
-#include <string>
 #include <iostream>
 #include <thread>
-#include <map>
-#include <stdio.h>
-#include <stdlib.h>     /* srand, rand */
-#include <time.h>       /* time */
 
-// enum class x64_Register : char {
-//     register int counter asm(errReg);
-//     // rax,
-//     // rcx,
-//     // rdx,
-//     // rbx,
-//     // rsi,
-//     // rdi,
-//     // rsp,
-//     // rbp,
-//     // r8,
-//     // r9,
-//     // r10,
-//     // r11,
-//     // r12,
-//     // r13,
-//     // r14,
-//     // r15
-// };
+enum class ErrorType {
+    randomArithmeticDev,
+    stackPointer
+};
 
-// std::map<x64_Register, const char*> x64_RegisterMap = {
-//     { x64_Register::rax, "rax" },
-//     { x64_Register::rcx, "rcx" },
-//     { x64_Register::rdx, "rdx" },
-//     { x64_Register::rbx, "rbx" },
-//     { x64_Register::rsi, "rsi" },
-//     { x64_Register::rdi, "rdi" },
-//     { x64_Register::rsp, "rsp" },
-//     { x64_Register::rbp, "rbp" },
-//     { x64_Register::r8, "r8" },
-//     { x64_Register::r9, "r9" },
-//     { x64_Register::r10, "r10" },
-//     { x64_Register::r11, "r11" },
-//     { x64_Register::r12, "r12" },
-//     { x64_Register::r13, "r13" },
-//     { x64_Register::r14, "r14" },
-//     { x64_Register::r15, "r15" }
-// };
+int getRand(int range) {
+    return rand() % (2 * range) - range;
+}
 
-// int registerCount = 4;
-// register int rax asm("rax");
-// register int rbx asm("rbx");
-// register int rcx asm("rcx");
-// register int rdx asm("rdx");
+void registerErrorGenerator(ErrorType errType, int maxRange, int numIterations, int period, bool enableLogging) {
+    // x64 Registers
+    register int rax asm("rax");
+    register int rbx asm("rbx");
+    register int rcx asm("rcx");
+    register int rdx asm("rdx");
+    register int rsi asm("rsi");
+    register int rdi asm("rdi");
+    register int rsp asm("rsp");
+    register int rbp asm("rbp");
+    register int r8 asm("r8");
+    register int r9 asm("r9");
+    register int r10 asm("r10");
+    register int r11 asm("r11");
+    register int r12 asm("r12");
+    register int r13 asm("r13");
+    register int r14 asm("r14");
+    register int r15 asm("r15");
 
-void regInc() {
-    // const char* errReg = x64_RegisterMap[x64_Register(rand() % x64_RegisterMap.size())];
-    // std::cout << "Err reg: " << errReg << std::endl;
+    for (int i = 0; i < numIterations; ++i) {
+        switch (errType) {
+            case ErrorType::stackPointer:
+                if (enableLogging) std::cout << "[Stack pointer register error]" << std::endl;
+                rsp += getRand(maxRange);
+                break;
+            case ErrorType::randomArithmeticDev:
+                int erroneousRegisterIndex = rand() % 4;
+                if (enableLogging) std::cout << "[Arithmetic register error]" << std::endl;
+                switch (erroneousRegisterIndex) {
+                    case 0: rax += getRand(maxRange); break;
+                    case 1: rbx += getRand(maxRange); break;
+                    case 2: rcx += getRand(maxRange); break;
+                    case 3: rdx += getRand(maxRange); break;
+                }
+                break;
+        }
 
-    register int counter asm("rsp");
-    counter = 0;
-    
-    for (int i = 0; i < 10; i++) {
-        counter++;
+        std::this_thread::sleep_for(std::chrono::microseconds(period));
     }
 }
 
-int main() {
-    // x86 only
-    // int eax, ebx, ecx, edx;
-    // eax = 1;
-    // __asm( "cpuid"
-    //     : "+a" (eax), "+b" (ebx), "+c" (ecx), "+d" (edx));
-    // int buffer = edx;
-    // std::cout << "Buffer: " << buffer << std::endl;
-
-    srand(time(NULL));
-
-    std::thread t1(regInc);    
-
-    int counter = 0;
-    for (int i = 0; i < 100; ++i) {
-        counter++;
-        std::cout << counter << std::endl;
-    }
-    //std::cout << "Size: " << sizeof(counter) << std::endl;
-
-    t1.join();
-
-    return 0;
-}
+// TODO:
+//      x86 only
+//      int eax, ebx, ecx, edx;
+//      eax = 1;
+//      __asm( "cpuid"
+//          : "+a" (eax), "+b" (ebx), "+c" (ecx), "+d" (edx));
+//      int buffer = edx;
+//      std::cout << "Buffer: " << buffer << std::endl;

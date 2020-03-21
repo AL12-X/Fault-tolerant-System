@@ -1,4 +1,8 @@
-#include "ram_error_generator/ram_error_generator.hpp"
+// -pthread
+
+#include <time.h>       /* time */
+
+#include "ram_error_generator.hpp"
 
 int main() {
     srand(time(NULL));
