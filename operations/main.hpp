@@ -69,15 +69,16 @@ namespace FT {
 
     template<typename T>
     T land(const T& op1, const T& op2, ErrorStatus& err) {
-        T cnj = op1 & op2;
-        T tmp1 = op1 & (~op2);
-        tmp1 = tmp1 | cnj;
+        T cnj1 = (op1) & (op2);
+        T tmp1 = (op1) & (~(op2));
+        tmp1 = tmp1 | cnj1;
+        tmp1 = tmp1 ^ op1;
 
-        if(tmp1 != op1) {
+        if(tmp1 != 0) {
             err = ErrorStatus::caughtError;
-            return (cnj ^ tmp1);
+            return ((cnj1 ^ tmp1));
         }
         err = ErrorStatus::noError;
-        return cnj;
+        return cnj1;
     }
 }
