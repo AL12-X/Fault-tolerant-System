@@ -1,73 +1,60 @@
 namespace FT {
     enum class ErrorStatus {
         noError,
-        caughtError
+        withError
     };
-
-    // template<typename T>
-    // inline T abs(const T& op) {
-    //     return (op > 0 ? op : -op);
-    // }
     
     template<typename T>
     T mult(const T& op1, const T& op2, ErrorStatus& err) {
-        T tmp1 = op1 * op2;
-        T op2_inc = op2 + 1;
-        T tmp2 = op1 * op2_inc;
-        T tmp3 = (tmp2 - tmp1);
-        T res = tmp3 - op1;
-        if (res != 0) {
-            err = ErrorStatus::caughtError;
-            return tmp1 + res;
+        T res = op1 * op2; // checked and corrected
+        T tmp = op1 * (op2 + 1) - res - op1;
+        if (tmp != 0) {
+            err = ErrorStatus::withError;
+            return res + tmp;
         }
         err = ErrorStatus::noError;
-        return tmp1;
+        return res;
     }
 
     template<typename T>
     T div(const T& op1, const T& op2, ErrorStatus& err) {
-        T c1 = op1/op2;
-        T c2 = (op1+1) / op2;
-        T tmp = (c2 - c1);
-        T res = tmp - 1/op2;
-        if(res != 0) {
-            err = ErrorStatus::caughtError;
-            return c1+res;
+        T res = op1 / op2; // checked and corrected
+        T tmp = (op1 + 1) / op2 - res - 1 / op2;
+        if (tmp != 0) {
+            err = ErrorStatus::withError;
+            return res + tmp;
         }
         err = ErrorStatus::noError;
-        return c1;
+        return res;
     }
 
     template<typename T>
-    T lnot(const T& op1, ErrorStatus& err) {
-        T tmp1 = ~op1;
-        T tmp2 = op1 ^ tmp1;
-        tmp2 ^= -1;
-
-        if (tmp2 != 0) {
-            err = ErrorStatus::caughtError;
-            return (tmp1 ^ tmp2);
+    T lNot(const T& op, ErrorStatus& err) {
+        T res = ~op; // checked and corrected
+        T tmp = (op ^ res) ^ -1;
+        if (tmp != 0) {
+            err = ErrorStatus::withError;
+            return res ^ tmp;
         }
-
         err = ErrorStatus::noError;
-        return tmp1;
+        return res;
     }
 
     template<typename T>
-    T lxor(const T& op1, const T& op2, ErrorStatus& err) {
-        T tmp1 = op1 ^ op2;
-        T tmp2 = tmp1 ^ tmp1;
-
-        if (tmp2 != 0) {
-            err = ErrorStatus::caughtError;
-            return (tmp1 ^ tmp2);
+    T lXor(const T& op1, const T& op2, ErrorStatus& err) {
+        T res = op1 ^ op2; // checked and corrected
+        T tmp = res ^ res;
+        if (tmp != 0) {
+            err = ErrorStatus::withError;
+            return res ^ tmp;
         }
-
         err = ErrorStatus::noError;
-        return tmp1;
+        return res;
     }
 
+    // NOT WORKING =======================================
     template<typename T>
+<<<<<<< HEAD
     T land(const T& op1, const T& op2, ErrorStatus& err) {
         T cnj1 = (op1) & (op2);
         T tmp1 = (op1) & (~(op2));
@@ -80,5 +67,16 @@ namespace FT {
         }
         err = ErrorStatus::noError;
         return cnj1;
+=======
+    T lAnd(const T& op1, const T& op2, ErrorStatus& err) {
+        T res = op1 & op2; // checked and corrected
+        T tmp = ((op1 & ~op2) | res) ^ op1;
+        if (tmp != 0) {
+            err = ErrorStatus::withError;
+            return res ^ tmp;
+        }
+        err = ErrorStatus::noError;
+        return res;
+>>>>>>> 595d334b53d1ea3465b06a89d8f4778696c4cb9c
     }
 }
