@@ -51,17 +51,4 @@ namespace FT {
         err = ErrorStatus::noError;
         return res;
     }
-
-    // NOT WORKING =======================================
-    template<typename T>
-    T lAnd(const T& op1, const T& op2, ErrorStatus& err) {
-        T res = op1 & op2; // checked and corrected
-        T tmp = ((op1 & ~op2) | res) ^ op1;
-        if (tmp != 0) {
-            err = ErrorStatus::withError;
-            return res ^ tmp;
-        }
-        err = ErrorStatus::noError;
-        return res;
-    }
 }
