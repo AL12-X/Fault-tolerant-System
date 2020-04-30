@@ -1,5 +1,6 @@
 #include <iomanip>
 
+#include "../tools/tools_common.hpp"
 #include "../tools/error_generators/ram_error_generator.hpp"
 
 int main() {

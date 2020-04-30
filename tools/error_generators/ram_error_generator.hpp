@@ -1,8 +1,6 @@
 #include <climits>
 #include <stdlib.h>
 
-#include "../tools_common.hpp"
-
 namespace FT::tools {
     class RamErrorGenerator {
     public:
