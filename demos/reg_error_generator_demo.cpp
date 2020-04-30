@@ -1,16 +1,18 @@
-// -ffixed-ebx -pthread
+// Flags: -w -ffixed-edx -fomit-frame-pointer
 
-#include <time.h>       /* time */
-
-#include "reg_error_generator.hpp"
+#include "../tools/tools_common.hpp"
+#include "../tools/error_generators/reg_error_generator.hpp"
 
 int main() {
-    srand(time(NULL));
-
-    std::thread t1(registerErrorGenerator, ErrorType::randomArithmeticDev, 16, 10, 0, true);    
+    std::mutex mutex;
+    FT::tools::RegErrorGenerator errGen(mutex, true, std::cout);
+    std::thread t1(&FT::tools::RegErrorGenerator::run, &errGen, FT::tools::RegErrorType::randomArithmeticDev,
+                   16, 10, 0);
 
     int counter = 0;
-    for (int i = 0; i < 1000; ++i) {
+    for (int i = 0; i < 100; ++i) {
+        std::lock_guard<std::mutex> lock(mutex);
+
         counter++;
         std::cout << "Count: " << counter << std::endl;
     }

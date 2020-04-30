@@ -1,61 +1,82 @@
-#include <iostream>
-#include <thread>
+namespace FT::tools {
+    #ifdef _ARCH_x64
+        register int rax asm("rax");
+        register int rbx asm("rbx");
+        register int rcx asm("rcx");
+        // register int rdx asm("rdx");
+        
+        // register int rsi asm("rsi");
+        // register int rdi asm("rdi");
+        register int rsp asm("rsp");
+        // register int rbp asm("rbp");
+        
+        // register int r8 asm("r8");
+        // register int r9 asm("r9");
+        // register int r10 asm("r10");
+        // register int r11 asm("r11");
+        // register int r12 asm("r12");
+        // register int r13 asm("r13");
+        // register int r14 asm("r14");
+        // register int r15 asm("r15");
+    #endif
 
-enum class ErrorType {
-    randomArithmeticDev,
-    stackPointer
-};
+    class RegErrorGenerator {
+    public:
+        RegErrorGenerator() = delete;
 
-int getRand(int range) {
-    return rand() % (2 * range) - range;
-}
-
-void registerErrorGenerator(ErrorType errType, int maxRange, int numIterations, int period, bool enableLogging) {
-    // x64 Registers
-    register int rax asm("rax");
-    register int rbx asm("rbx");
-    register int rcx asm("rcx");
-    register int rdx asm("rdx");
-    register int rsi asm("rsi");
-    register int rdi asm("rdi");
-    register int rsp asm("rsp");
-    register int rbp asm("rbp");
-    register int r8 asm("r8");
-    register int r9 asm("r9");
-    register int r10 asm("r10");
-    register int r11 asm("r11");
-    register int r12 asm("r12");
-    register int r13 asm("r13");
-    register int r14 asm("r14");
-    register int r15 asm("r15");
-
-    for (int i = 0; i < numIterations; ++i) {
-        switch (errType) {
-            case ErrorType::stackPointer:
-                if (enableLogging) std::cout << "[Stack pointer register error]" << std::endl;
-                rsp += getRand(maxRange);
-                break;
-            case ErrorType::randomArithmeticDev:
-                int erroneousRegisterIndex = rand() % 4;
-                if (enableLogging) std::cout << "[Arithmetic register error]" << std::endl;
-                switch (erroneousRegisterIndex) {
-                    case 0: rax += getRand(maxRange); break;
-                    case 1: rbx += getRand(maxRange); break;
-                    case 2: rcx += getRand(maxRange); break;
-                    case 3: rdx += getRand(maxRange); break;
-                }
-                break;
+        RegErrorGenerator(std::mutex& mtx, bool logging, std::ostream& out = std::cout)
+                         : eng(rd()), mutex(mtx), os(out) {
+            enableLogging = logging;
         }
 
-        std::this_thread::sleep_for(std::chrono::microseconds(period));
-    }
-}
+        // TODO: try __asm("mov %eax, 3");
 
-// TODO:
-//      x86 only
-//      int eax, ebx, ecx, edx;
-//      eax = 1;
-//      __asm( "cpuid"
-//          : "+a" (eax), "+b" (ebx), "+c" (ecx), "+d" (edx));
-//      int buffer = edx;
-//      std::cout << "Buffer: " << buffer << std::endl;
+        void run(RegErrorType errType, int maxRange, int numIterations, int timeIdle) {
+            std::uniform_int_distribution<> valueDistr(-maxRange, maxRange-1);
+            std::uniform_int_distribution<> regIdxDistr(0, 2);
+
+            for (int i = 0; i < numIterations; ++i) {
+                int randValue;
+
+                switch (errType) {
+                    case RegErrorType::stackPointer:
+                        randValue = valueDistr(eng);
+
+                        if (enableLogging) {
+                            std::lock_guard<std::mutex> lock(mutex);
+                            os << "Generated: [Stack pointer register error with value " << randValue <<"]\n";
+                        }
+
+                        rsp += randValue;
+                        break;
+                    case RegErrorType::randomArithmeticDev:
+                        randValue = valueDistr(eng);
+                        int randReg = regIdxDistr(eng);
+
+                        if (enableLogging) {
+                            std::lock_guard<std::mutex> lock(mutex);
+                            os << "Generated: [Arithmetic register error on register " << randReg
+                               << " with value " << randValue << "]\n";
+                        }
+
+                        switch (randReg) {
+                            case 0: rax += randValue; break;
+                            case 1: rbx += randValue; break;
+                            case 2: rcx += randValue; break;
+                            //case 3: rdx += randValue; break;
+                        }
+                        break;
+                }
+
+                std::this_thread::sleep_for(std::chrono::microseconds(timeIdle));
+            }
+        }
+
+    private:
+        std::random_device rd;
+        std::mt19937 eng;
+        std::mutex& mutex;
+        bool enableLogging;
+        std::ostream& os;
+    };
+}
