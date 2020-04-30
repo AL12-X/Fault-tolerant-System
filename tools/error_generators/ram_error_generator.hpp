@@ -1,37 +1,54 @@
-#include <iostream>
-#include <thread>
 #include <climits>
-#include <mutex>
-#include <stdlib.h>     /* srand, rand */
+#include <stdlib.h>
 
-enum class ErrorType {
-    randomBitFlip
-};
+#include "../tools_common.hpp"
 
-std::mutex mutex;
+namespace FT::tools {
+    class RamErrorGenerator {
+    public:
+        RamErrorGenerator() = delete;
 
-template<typename T>
-void ramErrorGenerator(ErrorType errType, T* ptr, int size, int numIterations, int period, bool enableLogging) {
-    for (int i = 0; i < numIterations; ++i) {
-        switch (errType) {
-            case ErrorType::randomBitFlip:
-                int typeSizeInBits = sizeof(T) * CHAR_BIT;
-                int erroneousBitIndex = rand() % (typeSizeInBits * size);
-                int elementIndex = erroneousBitIndex / typeSizeInBits;
-                int offsetInElement = erroneousBitIndex % typeSizeInBits;
-                
-                ptr[elementIndex] ^= (1 << offsetInElement);
-
-                if (enableLogging) {
-                    std::lock_guard<std::mutex> lock(mutex);
-
-                    std::cout << "[RAM error on addr " << (ptr + offsetInElement)
-                        << " (element " << elementIndex << ", bit " << (typeSizeInBits - offsetInElement)
-                        << ")]" << std::endl;
-                }
-                break;
+        RamErrorGenerator(void* startPtr, int size, std::mutex& mtx, bool logging, std::ostream& out = std::cout)
+                         : eng(rd()), mutex(mtx), os(out) {
+            rangeStartPtr = startPtr;
+            rangeSize = size;
+            enableLogging = logging;
         }
 
-        std::this_thread::sleep_for(std::chrono::microseconds(period));
-    }
+        void run(RamErrorType errType, int numIterations, int timeIdle) {
+            std::uniform_int_distribution<> valueDistr(0, CHAR_BIT * rangeSize - 1);
+
+            for (int i = 0; i < numIterations; ++i) {
+                switch (errType) {
+                    case RamErrorType::randomBitFlip:
+                        char* charPtr = (char*)rangeStartPtr;
+                        int erroneousBitIndex = valueDistr(eng);
+                        int elementIndex = erroneousBitIndex / CHAR_BIT;
+                        int offsetInElement = erroneousBitIndex % CHAR_BIT;
+
+                        charPtr[elementIndex] ^= (1 << offsetInElement);
+
+                        if (enableLogging) {
+                            std::lock_guard<std::mutex> lock(mutex);
+
+                            os << "Generated: [RAM error on address " << static_cast<void*>(charPtr + elementIndex)
+                               << " in bit " << (CHAR_BIT - offsetInElement - 1)
+                               << "]\n";
+                        }
+                        break;
+                }
+
+                std::this_thread::sleep_for(std::chrono::microseconds(timeIdle));
+            }
+        }
+
+    private:
+        std::random_device rd;
+        std::mt19937 eng;
+        void* rangeStartPtr;
+        int rangeSize;
+        std::mutex& mutex;
+        bool enableLogging;
+        std::ostream& os;
+    };
 }
