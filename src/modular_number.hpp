@@ -48,6 +48,7 @@ namespace FT {
 
         ModularNumber& operator=(const ModularNumber& num) {
             remainders = num.remainders;
+            moduliProduct = num.moduliProduct;
         }
 
         ModularNumber operator*(const ModularNumber& val) {
@@ -68,9 +69,8 @@ namespace FT {
             }
         }
 
-        const std::vector<int> moduli = {2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53}; // max 8-byte
-        unsigned long long moduliProduct; // ??? ull not enough
-        
+        const std::vector<int> moduli = {2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43};
+        unsigned long long moduliProduct;
         std::vector<int> remainders;
     };
 
