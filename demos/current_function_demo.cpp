@@ -1,7 +1,7 @@
 #include <iostream>
 
 #include "../src/common.hpp"
-#include "../src/current_function.hpp"
+#include "../templates/current_function.hpp"
 
 void foo(FT::Function caller) {
     if (FT::currentFunction != FT::Function::foo) throw std::runtime_error("IP register error");
