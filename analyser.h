@@ -1,163 +1,422 @@
-//
-// Created by sanda on 27.04.2020.
-//
 #ifndef ANALYSER_H_
 #define ANALYSER_H_
 #include <iostream>
 #include <string>
 #include <fstream>
 #include <vector>
-
-struct flags {
-    static bool _start_if;
-    static bool _start_fun;
+#include <map>
+#include <set>
+#include <stack>
+/**/
+class GreaterHandler {
+protected:
+    GreaterHandler() : currentLevel(0), currentFunction() {}/**/
+    int currentLevel;
+    std::string currentFunction;
+public:
+    void incLevel() {
+        ++currentLevel;
+    }
+    void decLevel() {
+        --currentLevel;
+    }
+    int getLevel() {
+        return currentLevel;
+    }
 };
-bool flags::_start_if = false;
-bool flags::_start_fun = false;
 
-void analyser(std::string path) {
-    std::fstream source;
-    std::vector<char> copyif;
-    source.open(path);
-    if (!source.is_open()) {
-        throw std::runtime_error("Can't open source file");
-    }
-    else {
-        char prev;
-        char symb;
-        char nxt;
-        while (source.get(symb)) {
-            switch (symb)
-            {
-                case '\'': {
-                    source.get(nxt);
-                    while (nxt != '\'' || symb == '\\') {
-                        std::cout << symb;
-                        symb = nxt;
-                        source.get(nxt);
-                    }
-                    std::cout << symb;
-                    std::cout << nxt;
-                    break;
-                }
-                case '\"': {
-                    source.get(nxt);
-                    while (nxt != '\"' || symb == '\\') {
-                        std::cout << symb;
-                        symb = nxt;
-                        source.get(nxt);
-                    }
-                    std::cout << symb;
-                    std::cout << nxt;
-                    break;
-                }
-                case '#': {
-                    while (symb != '\n') {
-                        source.get(symb);
-                    }
-                    std::cout << symb;
-                    break;
-                }
-                case '/': {
-                    source.get(nxt);
-                    if (nxt == '*') {
-                        while (symb != '*' || nxt != '/') {
-                            symb = nxt;
-                            source.get(nxt);
-                        }
-                    }
-                    else
-                    if (nxt == '/') {
-                        symb = nxt;
-                        while (symb != '\n') {
-                            source.get(symb);
-                        }
-                        std::cout << symb;
-                    }
-                    break;
-                }
-                case ';': {
-                    std::cout << ';';
-                    if (flags::_start_if) {
-                        std::cout << "\n\t}\n";
-                        flags::_start_if = !flags::_start_if;
-                    }
-                    break;
-                }
-                case ')': {
-                    std::cout << ')';
-                    source.get(symb);
-                    std::cout << symb;
-                    while (symb == ' ' || symb == '\n' || symb == '\t' || symb == ')') {
-                        source.get(symb);
-                        std::cout << symb;
-                    }
-                    if (symb == '{') {
-                        std::cout << "\"--check point, please--\"";
-                    }
-                    break;
-                }
-                case 's': {
-                    std::cout << 's';
-                    const char* word = "switch";
-                    if (prev == ' ' || prev == '\t' || prev == '\n' || prev == '}' || prev == ';')
-                        for (int i = 0; i < 5; ++i) {
-
-                        }
-                    break;
-                }
-                case 'i': {
-                    source.get(nxt);
-                    std::cout << symb << nxt;
-                    if (nxt == 'f') {
-                        source.get(symb);
-                        if ((prev == ' ' || prev == '\n' || prev == '\t' || prev == '{' || prev == '}' || prev == ';') && (symb == ' ' || symb == '(' || symb == '\n' || symb == '\t')) {
-                            flags::_start_if = true;
-                            std::cout << " (";
-                            while (symb != '(')
-                            {
-                                source.get(symb);
-                            }
-                            source.get(symb);
-                            int cnt = 0;
-                            while (symb != ')' || cnt != 0) {
-                                if (symb == '(')
-                                    ++cnt;
-                                if (symb == ')')
-                                    --cnt;
-                                if (symb != '\n' && symb != '\t') {
-                                    copyif.push_back(symb);
-                                    std::cout << symb;
-                                }
-                                source.get(symb);
-                            }
-                            std::cout << ") ";
-                            source.get(symb);
-                            while (symb == ' ' || symb == '\n' || symb == '\t') {
-                                source.get(symb);
-                            }
-                            cnt = 0;
-                            if (symb != '{' && symb != ';') {
-                                std::cout << "{\n\t";
-                            }
-                            std::cout << symb;
-                            //std::cout  << '\t'<< "if ";
-                            /*for (int i = 0; i < copyif.size(); ++i) {
-                                std::cout << copyif[i];
-                            }*/
-                        }
-                    }
-                    break;
-                }
-                default:
-                    std::cout << symb;
-                    break;
+struct record {
+    std::string name;
+    int type;
+    int level;
+    record(std::string _name = "", int _type = 0, int _level = 0) : level(_level), name(_name), type(_type) {}
+    record(const record& other) : name(other.name), type(other.type), level(other.level) {}
+    record& operator=(const record& other) {
+        if (0)
+            if (1) {
             }
-            prev = symb;
-        }
+        int res;
+        name = other.name;
+        type = other.type;
+        level = other.level;
+        return *this;
     }
+    /* bool operator==(const record& other) {
+         if (name == other.name)
+             return (level == other.level);
+         return false;
+     }
+     bool operator!=(const record& other) {
+         return !(*this == other);
+     }
+     bool operator*/
+    ~record() {}
+};
 
+class WordDetector : public GreaterHandler {
+    std::set<record> data;
+    std::string buffer;
+    bool is_started;
+    bool is_ended;
+public:
+    WordDetector() : GreaterHandler(), is_started(false), data(), buffer(), is_ended(false) {
+        //data.insert(record(" ", 0, 0));
+    }
+    bool finder(const char& symbol) {
+        if (!is_started) {
+            if (symbol >= 'A' && symbol <= 'Z' || symbol >= 'a' && symbol <= 'z' || symbol == '_') {
+                is_started = true;
+                if (!buffer.empty()) {
+                    buffer.clear();
+                }
+                buffer.push_back(symbol);
+                return false;
+            }
+        }
+        else {
+            if (symbol >= 'A' && symbol <= 'Z' || symbol >= 'a' && symbol <= 'z' || symbol >= '0' && symbol <= '9' || symbol == '_') {
+                buffer.push_back(symbol);
+                return false;
+            }
+            is_ended = true;
+            is_started = false;
+        }
+        return true;
+    }
+    record wordHandler(std::map<std::string, int>& key_words) {
+        //std::pair<std::set<record>::iterator, bool> result;
+        record result("", -1, 0);
+        if (!buffer.empty()) {
+            std::map<std::string, int>::iterator iter = key_words.find(buffer);
+            if (iter != key_words.end()) {
+                result = record(buffer, iter->second, currentLevel + 1);
+            }
+            else {
+                result = record(buffer, 0, currentLevel + 1);
+            }
+            buffer.clear();
+            is_ended = false;
+        }
+        return result;
 
-    source.close();
+    }
+    bool status() {
+        return is_ended;
+    }
+    size_t size() {
+        return data.size();
+    }
+    /*std::string& operator[](size_t num) {
+        return data[num].name;
+    }*/
+};
+
+void setKeyWords(std::map<std::string, int>& key_words) {
+    std::ifstream kw("key_words.txt");
+    if (!kw.is_open()) {
+        throw std::runtime_error("Open key_words.txt fail");
+    }
+    std::string tmp;
+    while (!kw.eof()) {
+        tmp.clear();
+        std::pair<std::string, int> tmp;
+        kw >> tmp.first;
+        kw >> tmp.second;
+        key_words.insert(tmp);
+    }
+    kw.close();
+}
+
+void analyser(std::istream& source, std::ostream& out) {
+
+    const std::string check(" [CHECKPOINT,PLEASE] ");
+    char prev;
+    char cur;
+    bool can_ends = false;
+    int string_counter = 0;;
+    int symbol_in_string_counter = 0;
+
+    /*   unsigned short _flags = 0;
+       unsigned short _class = 16;
+       unsigned short _if = 1;
+       unsigned short _else = 2;
+       unsigned short _switch = 4;
+       unsigned short _while = 8;*/
+
+    std::map<std::string, int> key_words;
+    setKeyWords(key_words);
+
+    WordDetector detector;
+    record tmp;
+    std::string if_condition;
+
+    int block_without_braces = 0;
+    int block_with_braces = 0;
+    bool flow_contorl_operator = false;
+    bool new_branch_inside = false;
+    bool loop_inside = false;
+    bool ch;
+    std::stack<int> currentLayer;
+    currentLayer.push(block_with_braces);
+    while (source.get(cur)) {
+        symbol_in_string_counter++;
+        if (detector.finder(cur)) {
+            if (detector.status()) {
+                tmp = detector.wordHandler(key_words);
+                if (tmp.type != -1) {
+                    ch = false;
+                    if (tmp.name == "return" || tmp.name == "break" || tmp.name == "continue") {
+                        out << check;
+                    }
+                    if (tmp.name == "if" || tmp.name == "switch" || tmp.name == "for" || tmp.name == "while") {
+                        while (cur != '(') {
+                            prev = cur;
+                            source.get(cur);
+                        }
+                        int counter = 0;
+                        prev = cur;
+                        if_condition.push_back(cur);
+                        source.get(cur);
+
+                        while (cur != ')' || counter > 0) {
+                            switch (cur) {
+                            case '(': {
+                                if_condition.push_back(cur);
+                                prev = cur;
+                                source.get(cur);
+                                ++counter;
+                                break;
+                            }
+                            case ')': {
+                                if_condition.push_back(cur);
+                                prev = cur;
+                                source.get(cur);
+                                --counter;
+                                break;
+                            }
+                            case '"': {
+                                prev = cur;
+                                source.get(cur);
+                                while (cur != '"' || (prev == '\\' && !can_ends)) {
+                                    if (can_ends)
+                                        can_ends = false;
+                                    if_condition.push_back(prev);
+                                    prev = cur;
+                                    source.get(cur);
+                                    if (prev == '\\' && cur == '\\') {
+                                        can_ends = true;
+                                    }
+                                }
+                                can_ends = false;
+                                if_condition.push_back(prev);
+                                if_condition.push_back(cur);
+                                prev = cur;
+                                source.get(cur);
+                                break;
+                            }
+                            case '\'': {
+                                prev = cur;
+                                source.get(cur);
+                                while (cur != '\'' || (prev == '\\' && !can_ends)) {
+                                    if_condition.push_back(prev);
+                                    prev = cur;
+                                    source.get(cur);
+                                    if (prev == '\\' && cur == '\\') {
+                                        can_ends = true;
+                                    }
+                                }
+                                can_ends = false;
+                                if_condition.push_back(prev);
+                                if_condition.push_back(cur);
+                                prev = cur;
+                                source.get(cur);
+                                break;
+                            }
+                            default: {
+                                if_condition.push_back(cur);
+                                prev = cur;
+                                source.get(cur);
+                                break;
+                            }
+                            }
+                        }
+                        if_condition.push_back(cur);
+                        out << tmp.name;
+                        ch = true;
+                        out << '[' << if_condition << ']';
+                        if_condition.clear();
+                        source.get(cur);
+                        while (cur == '\t' || cur == '\n' || cur == ' ') {
+                            source.get(cur);
+                        }
+                        out << ' ';
+                        if (cur != '{') {
+                            detector.incLevel();
+                            out << " //[CHECKPOINT][WBR][start]\n";
+                            int tmp = detector.getLevel();
+                            while (tmp-- > 0) {
+                                out << "    ";
+                            }
+                            currentLayer.push(block_with_braces);
+                            ++block_without_braces;
+                            std::cout << block_without_braces << '\t' << block_with_braces << '\n';
+                            if (!detector.finder(cur)) {
+                                continue;
+                            }
+                        }
+                    }
+                    if (!ch)
+                        out << tmp.name;
+                }
+            }
+            switch (cur) {
+
+            case '{': {
+                detector.incLevel();
+                ++block_with_braces;
+                std::cout << block_without_braces << '\t' << block_with_braces << '\n';
+                out << cur;
+                out << " /*[CHECKPOINT,PLEASE][BR][start]*/\n";
+                int tmp = detector.getLevel();
+                while (tmp-- > 0) {
+                    out << "    ";
+                }
+                break;
+            }
+            case '}': {
+                detector.decLevel();
+                out << "/*[CHECKPOINT,PLEASE][BR][end]*/";
+                out << cur;
+                --block_with_braces;
+                if (block_without_braces && currentLayer.top() == block_with_braces) {
+                    out << '\n';
+                    detector.decLevel();
+                    int tmp = detector.getLevel();
+                    while (tmp-- > 0) {
+                        out << "    ";
+                    }
+                    out << "//[CHECKPOINT,PLEASE][WBR][end]\n";
+                    tmp = detector.getLevel();
+                    while (tmp-- > 0) {
+                        out << "    ";
+                    }
+                    --block_without_braces;
+                    currentLayer.pop();
+                }
+                break;
+            }
+            case ';': {
+                out << cur;
+                if (block_without_braces) {
+                    --block_without_braces;
+                    detector.decLevel();
+                    out << '\n';
+                    int tmp = detector.getLevel();
+                    while (tmp-- > 0) {
+                        out << "    ";
+                    }
+                    out << "//[CHECKPOINT,PLEASE][WBR][end]\n";
+                }
+                break;
+            }
+            case '=': {
+                out << cur;
+                break;
+            }
+            case '\n': {
+                string_counter++;
+                symbol_in_string_counter = 0;
+                out << cur;
+                break;
+            }
+            case '\'': {
+                prev = cur;
+                source.get(cur);
+                while (cur != '\'' || (prev == '\\' && !can_ends)) {
+                    out << prev;
+                    prev = cur;
+                    source.get(cur);
+                    if (prev == '\\' && cur == '\\') {
+                        can_ends = true;
+                    }
+                }
+                can_ends = false;
+                out << prev;
+                out << cur;
+                break;
+            }
+                     // rewrite this case
+            case '"': {
+                prev = cur;
+                source.get(cur);
+                while (cur != '"' || (prev == '\\' && !can_ends)) {
+                    if (can_ends)
+                        can_ends = false;
+                    out << prev;
+                    prev = cur;
+                    source.get(cur);
+                    if (prev == '\\' && cur == '\\') {
+                        can_ends = true;
+                    }
+                }
+                can_ends = false;
+                out << prev;
+                out << cur;
+                break;
+            }
+            case '#': {
+                while (cur != '\n' && source.get(cur)) {
+                }
+                out << "//preprocessor\n";
+                string_counter++;
+                break;
+            }
+            case '/': {
+                if (prev == '/') {
+                    while (cur != '\n' && source.get(cur)) {
+                    }
+                    out << "//one string comment\n";
+                    string_counter++;
+                }
+                break;
+            }
+            case '*': {
+                if (prev == '/') {
+                    out << "/*multiple-line comment";
+                    while (cur != '/' || prev != '*') {
+                        prev = cur;
+                        if (prev == '\n') {
+                            string_counter++;
+                            out << "\nmultiple-line comment";
+                        }
+                        source.get(cur);
+                    }
+                    out << "*/";
+                }
+                break;
+            }
+            default: {
+                out << cur;
+                break;
+            }
+            }
+        }
+        prev = cur;
+    }
+    out << "\n____key_words_&&_identificators____\n";
+    /* for (int i = 0; i < detector.size(); ++i) {
+         for (int j = 0; j < detector[i].size(); ++j) {
+             out << detector[i][j];
+         }
+         out << std::endl;
+     }*/
+    out << "\n____number_of_lines____\n";
+    out << string_counter;
+    out << "\n____list_of_key_words____\n";
+    for (auto iter : key_words) {
+        for (size_t i = 0; i < iter.first.size(); ++i)
+            out << iter.first[i];
+        out << std::endl;
+    }
 }
 #endif
