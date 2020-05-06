@@ -152,11 +152,11 @@ void analyser(std::istream& source, std::ostream& out) {
 
     int block_without_braces = 0;
     int block_with_braces = 0;
-    bool flow_contorl_operator = false;
-    bool new_branch_inside = false;
-    bool loop_inside = false;
     bool ch;
+    bool struct_mode = false;
+    bool case_mode = false;
     std::stack<int> currentLayer;
+    std::stack<int> braces;
     currentLayer.push(block_with_braces);
     while (source.get(cur)) {
         symbol_in_string_counter++;
@@ -165,8 +165,15 @@ void analyser(std::istream& source, std::ostream& out) {
                 tmp = detector.wordHandler(key_words);
                 if (tmp.type != -1) {
                     ch = false;
+
                     if (tmp.name == "return" || tmp.name == "break" || tmp.name == "continue") {
                         out << check;
+                    }
+                    if (tmp.name == "class" || tmp.name == "struct" || tmp.name == "union" || tmp.name == "switch") {
+                        struct_mode = true;
+                    }
+                    if (tmp.name == "case") {
+                        case_mode = true;
                     }
                     if (tmp.name == "if" || tmp.name == "switch" || tmp.name == "for" || tmp.name == "while") {
                         while (cur != '(') {
@@ -253,13 +260,13 @@ void analyser(std::istream& source, std::ostream& out) {
                         if (cur != '{') {
                             detector.incLevel();
                             out << " //[CHECKPOINT][WBR][start]\n";
+                            ++string_counter;
                             int tmp = detector.getLevel();
                             while (tmp-- > 0) {
                                 out << "    ";
                             }
                             currentLayer.push(block_with_braces);
                             ++block_without_braces;
-                            std::cout << block_without_braces << '\t' << block_with_braces << '\n';
                             if (!detector.finder(cur)) {
                                 continue;
                             }
@@ -270,32 +277,70 @@ void analyser(std::istream& source, std::ostream& out) {
                 }
             }
             switch (cur) {
+                /*case ':': {
 
+                    if (case_mode) {
+                        source.get(cur);
+                        while (cur == '\t' || cur == '\n' || cur == ' ') {
+                            source.get(cur);
+                        }
+                        out << ' ';
+                        if (cur != '{') {
+                            detector.incLevel();
+                            out << " //[CHECKPOINT][WBR][start]\n";
+                            int tmp = detector.getLevel();
+                            while (tmp-- > 0) {
+                                out << "    ";
+                            }
+                            currentLayer.push(block_with_braces);
+                            ++block_without_braces;
+                            if (!detector.finder(cur)) {
+                                break;
+                            }
+                        }
+                        case_mode = false;
+                    }
+
+                }*/
             case '{': {
                 detector.incLevel();
                 ++block_with_braces;
-                std::cout << block_without_braces << '\t' << block_with_braces << '\n';
-                out << cur;
-                out << " /*[CHECKPOINT,PLEASE][BR][start]*/\n";
-                int tmp = detector.getLevel();
-                while (tmp-- > 0) {
-                    out << "    ";
+                if (struct_mode) {
+                    braces.push(1);
+                    out << cur;
+                    struct_mode = false;
+                }
+                else {
+                    braces.push(0);
+                    out << cur;
+                    out << "/*[CHECKPOINT,PLEASE][BR][start]*/\n";
+                    ++string_counter;
+                    int tmp = detector.getLevel();
+                    while (tmp-- > 0) {
+                        out << "    ";
+                    }
                 }
                 break;
             }
+
             case '}': {
                 detector.decLevel();
-                out << "/*[CHECKPOINT,PLEASE][BR][end]*/";
-                out << cur;
                 --block_with_braces;
+                if (braces.top() == 0) {
+                    out << "/*[CHECKPOINT,PLEASE][BR][end]*/";
+                }
+                out << cur;
+                braces.pop();
                 if (block_without_braces && currentLayer.top() == block_with_braces) {
                     out << '\n';
+                    ++string_counter;
                     detector.decLevel();
                     int tmp = detector.getLevel();
                     while (tmp-- > 0) {
                         out << "    ";
                     }
                     out << "//[CHECKPOINT,PLEASE][WBR][end]\n";
+                    ++string_counter;
                     tmp = detector.getLevel();
                     while (tmp-- > 0) {
                         out << "    ";
@@ -316,11 +361,8 @@ void analyser(std::istream& source, std::ostream& out) {
                         out << "    ";
                     }
                     out << "//[CHECKPOINT,PLEASE][WBR][end]\n";
+                    ++string_counter;
                 }
-                break;
-            }
-            case '=': {
-                out << cur;
                 break;
             }
             case '\n': {
