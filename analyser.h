@@ -7,12 +7,13 @@
 #include <map>
 #include <set>
 #include <stack>
-/**/
+
 class GreaterHandler {
 protected:
-    GreaterHandler() : currentLevel(0), currentFunction() {}/**/
+    GreaterHandler() : currentLevel(0), currentFunction() {}
     int currentLevel;
     std::string currentFunction;
+
 public:
     void incLevel() {
         ++currentLevel;
@@ -41,6 +42,7 @@ struct record {
         level = other.level;
         return *this;
     }
+    // TODO:
     /* bool operator==(const record& other) {
          if (name == other.name)
              return (level == other.level);
@@ -60,6 +62,7 @@ class WordDetector : public GreaterHandler {
     bool is_ended;
 public:
     WordDetector() : GreaterHandler(), is_started(false), data(), buffer(), is_ended(false) {
+        // TODO:
         //data.insert(record(" ", 0, 0));
     }
     bool finder(const char& symbol) {
@@ -74,7 +77,8 @@ public:
             }
         }
         else {
-            if (symbol >= 'A' && symbol <= 'Z' || symbol >= 'a' && symbol <= 'z' || symbol >= '0' && symbol <= '9' || symbol == '_') {
+            if (symbol >= 'A' && symbol <= 'Z' || symbol >= 'a' && symbol <= 'z' || symbol >= '0' && symbol <= '9'
+                || symbol == '_') {
                 buffer.push_back(symbol);
                 return false;
             }
@@ -84,6 +88,7 @@ public:
         return true;
     }
     record wordHandler(std::map<std::string, int>& key_words) {
+        // TODO:
         //std::pair<std::set<record>::iterator, bool> result;
         record result("", -1, 0);
         if (!buffer.empty()) {
@@ -106,6 +111,7 @@ public:
     size_t size() {
         return data.size();
     }
+    // TODO:
     /*std::string& operator[](size_t num) {
         return data[num].name;
     }*/
@@ -129,13 +135,14 @@ void setKeyWords(std::map<std::string, int>& key_words) {
 
 void analyser(std::istream& source, std::ostream& out) {
 
-    const std::string check(" [CHECKPOINT,PLEASE] ");
+    const std::string check(" // CHECKPOINT ");
     char prev;
     char cur;
     bool can_ends = false;
     int string_counter = 0;;
     int symbol_in_string_counter = 0;
 
+    // TODO:
     /*   unsigned short _flags = 0;
        unsigned short _class = 16;
        unsigned short _if = 1;
@@ -259,7 +266,7 @@ void analyser(std::istream& source, std::ostream& out) {
                         out << ' ';
                         if (cur != '{') {
                             detector.incLevel();
-                            out << " //[CHECKPOINT][WBR][start]\n";
+                            out << " // CHECKPOINT: WBR (start)\n";
                             ++string_counter;
                             int tmp = detector.getLevel();
                             while (tmp-- > 0) {
@@ -277,6 +284,7 @@ void analyser(std::istream& source, std::ostream& out) {
                 }
             }
             switch (cur) {
+                // TODO:
                 /*case ':': {
 
                     if (case_mode) {
@@ -313,7 +321,7 @@ void analyser(std::istream& source, std::ostream& out) {
                 else {
                     braces.push(0);
                     out << cur;
-                    out << "/*[CHECKPOINT,PLEASE][BR][start]*/\n";
+                    out << "/* CHECKPOINT: BR (start) */\n";
                     ++string_counter;
                     int tmp = detector.getLevel();
                     while (tmp-- > 0) {
@@ -327,7 +335,7 @@ void analyser(std::istream& source, std::ostream& out) {
                 detector.decLevel();
                 --block_with_braces;
                 if (braces.top() == 0) {
-                    out << "/*[CHECKPOINT,PLEASE][BR][end]*/";
+                    out << "/* CHECKPOINT: BR (end) */";
                 }
                 out << cur;
                 braces.pop();
@@ -339,7 +347,7 @@ void analyser(std::istream& source, std::ostream& out) {
                     while (tmp-- > 0) {
                         out << "    ";
                     }
-                    out << "//[CHECKPOINT,PLEASE][WBR][end]\n";
+                    out << "// CHECKPOINT: WBR (end)\n";
                     ++string_counter;
                     tmp = detector.getLevel();
                     while (tmp-- > 0) {
@@ -360,7 +368,7 @@ void analyser(std::istream& source, std::ostream& out) {
                     while (tmp-- > 0) {
                         out << "    ";
                     }
-                    out << "//[CHECKPOINT,PLEASE][WBR][end]\n";
+                    out << "// CHECKPOINT: WBR (end)\n";
                     ++string_counter;
                 }
                 break;
@@ -387,7 +395,8 @@ void analyser(std::istream& source, std::ostream& out) {
                 out << cur;
                 break;
             }
-                     // rewrite this case
+
+            // TODO: rewrite this case
             case '"': {
                 prev = cur;
                 source.get(cur);
@@ -445,16 +454,17 @@ void analyser(std::istream& source, std::ostream& out) {
         }
         prev = cur;
     }
-    out << "\n____key_words_&&_identificators____\n";
+    out << "\n ----- Keywords and identificators ----- \n";
+    // TODO:
     /* for (int i = 0; i < detector.size(); ++i) {
          for (int j = 0; j < detector[i].size(); ++j) {
              out << detector[i][j];
          }
          out << std::endl;
      }*/
-    out << "\n____number_of_lines____\n";
+    out << "\n ----- Number of lines ----- \n";
     out << string_counter;
-    out << "\n____list_of_key_words____\n";
+    out << "\n ----- List of keywords ----- \n";
     for (auto iter : key_words) {
         for (size_t i = 0; i < iter.first.size(); ++i)
             out << iter.first[i];
