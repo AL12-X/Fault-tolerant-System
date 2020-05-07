@@ -28,6 +28,5 @@
 *.app
 
 # Project folders and files
-Other
 .idea
 cmake-build-debug
