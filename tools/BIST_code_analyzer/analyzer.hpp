@@ -8,24 +8,6 @@
 #include <set>
 #include <stack>
 
-class GreaterHandler {
-protected:
-    GreaterHandler() : currentLevel(0), currentFunction() {}
-    int currentLevel;
-    std::string currentFunction;
-
-public:
-    void incLevel() {
-        ++currentLevel;
-    }
-    void decLevel() {
-        --currentLevel;
-    }
-    int getLevel() {
-        return currentLevel;
-    }
-};
-
 struct record {
     std::string name;
     int type;
@@ -33,9 +15,6 @@ struct record {
     record(std::string _name = "", int _type = 0, int _level = 0) : level(_level), name(_name), type(_type) {}
     record(const record& other) : name(other.name), type(other.type), level(other.level) {}
     record& operator=(const record& other) {
-        if (0)
-            if (1) {
-            }
         int res;
         name = other.name;
         type = other.type;
@@ -55,13 +34,33 @@ struct record {
     ~record() {}
 };
 
+
+class GreaterHandler {
+protected:
+    GreaterHandler() : currentLevel(0), currentFunction() {}
+    int currentLevel;
+    std::string currentFunction;
+
+public:
+    void incLevel() {
+        ++currentLevel;
+    }
+    void decLevel() {
+        --currentLevel;
+    }
+    int getLevel() {
+        return currentLevel;
+    }
+};
+
 class WordDetector : public GreaterHandler {
-    std::set<record> data;
+    //std::set<record> data;
     std::string buffer;
     bool is_started;
     bool is_ended;
+
 public:
-    WordDetector() : GreaterHandler(), is_started(false), data(), buffer(), is_ended(false) {
+    WordDetector() : GreaterHandler(), is_started(false), is_ended(false), buffer() {
         // TODO:
         //data.insert(record(" ", 0, 0));
     }
@@ -77,8 +76,8 @@ public:
             }
         }
         else {
-            if (symbol >= 'A' && symbol <= 'Z' || symbol >= 'a' && symbol <= 'z' || symbol >= '0' && symbol <= '9'
-                || symbol == '_') {
+            if (symbol >= 'A' && symbol <= 'Z' || symbol >= 'a' && symbol <= 'z'
+                || symbol >= '0' && symbol <= '9' || symbol == '_') {
                 buffer.push_back(symbol);
                 return false;
             }
@@ -105,12 +104,13 @@ public:
         return result;
 
     }
-    bool status() {
+    bool getStatus() {
         return is_ended;
     }
-    size_t size() {
+    // TODO:
+    /* size_t size() {
         return data.size();
-    }
+    }*/
     // TODO:
     /*std::string& operator[](size_t num) {
         return data[num].name;
@@ -133,15 +133,22 @@ void setKeyWords(std::map<std::string, int>& key_words) {
     kw.close();
 }
 
-void analyser(std::istream& source, std::ostream& out) {
+void printTabs(const int& tab_size, const int& current_level, std::ostream& out) {
+    for (int level = 0; level < current_level; ++level)
+        for (int tab = 0; tab < tab_size; ++tab) {
+            out << ' ';
+        }
+}
 
-    const std::string check(" // CHECKPOINT ");
+void analyser(std::istream& source, std::ostream& out) {
+    const std::string check(" /* CHECKPOINT */ ");
     char prev;
     char cur;
     bool can_ends = false;
-    int string_counter = 0;;
+    int string_counter = 1;
+    out << string_counter << ' ';
     int symbol_in_string_counter = 0;
-
+    int tab_size = 4;
     // TODO:
     /*   unsigned short _flags = 0;
        unsigned short _class = 16;
@@ -159,29 +166,32 @@ void analyser(std::istream& source, std::ostream& out) {
 
     int block_without_braces = 0;
     int block_with_braces = 0;
-    bool ch;
+    bool ch = true;
     bool struct_mode = false;
     bool case_mode = false;
     std::stack<int> currentLayer;
     std::stack<int> braces;
     currentLayer.push(block_with_braces);
+
     while (source.get(cur)) {
         symbol_in_string_counter++;
         if (detector.finder(cur)) {
-            if (detector.status()) {
+            if (detector.getStatus()) {
                 tmp = detector.wordHandler(key_words);
                 if (tmp.type != -1) {
-                    ch = false;
-
+                    ch = true;
                     if (tmp.name == "return" || tmp.name == "break" || tmp.name == "continue") {
                         out << check;
                     }
+
                     if (tmp.name == "class" || tmp.name == "struct" || tmp.name == "union" || tmp.name == "switch") {
                         struct_mode = true;
                     }
+
                     if (tmp.name == "case") {
                         case_mode = true;
                     }
+
                     if (tmp.name == "if" || tmp.name == "switch" || tmp.name == "for" || tmp.name == "while") {
                         while (cur != '(') {
                             prev = cur;
@@ -206,6 +216,22 @@ void analyser(std::istream& source, std::ostream& out) {
                                 prev = cur;
                                 source.get(cur);
                                 --counter;
+                                break;
+                            }
+                            case '\n': {
+                                source.get(cur);
+                                break;
+                            }
+                            case '\t': {
+                                source.get(cur);
+                                break;
+                            }
+                            case ' ': {
+                                if (prev != cur) {
+                                    prev = cur;
+                                    if_condition.push_back(cur);
+                                }
+                                source.get(cur);
                                 break;
                             }
                             case '"': {
@@ -256,30 +282,37 @@ void analyser(std::istream& source, std::ostream& out) {
                         }
                         if_condition.push_back(cur);
                         out << tmp.name;
-                        ch = true;
-                        out << '[' << if_condition << ']';
+                        ch = false;
+                        out << if_condition;
                         if_condition.clear();
                         source.get(cur);
                         while (cur == '\t' || cur == '\n' || cur == ' ') {
+                            if (cur == '\n')
+                                --string_counter;
                             source.get(cur);
                         }
                         out << ' ';
                         if (cur != '{') {
-                            detector.incLevel();
-                            out << " // CHECKPOINT: WBR (start)\n";
+                            out << '\n';
                             ++string_counter;
-                            int tmp = detector.getLevel();
-                            while (tmp-- > 0) {
-                                out << "    ";
-                            }
+                            out << string_counter << ' ';
+                            printTabs(tab_size, detector.getLevel(), out);
+                            out << "// CHECKPOINT: WBR (start)\n";
+                            ++string_counter;
+                            out << string_counter << ' ';
+                            detector.incLevel();
+                            printTabs(tab_size, detector.getLevel(), out);
+
                             currentLayer.push(block_with_braces);
                             ++block_without_braces;
+
                             if (!detector.finder(cur)) {
+                                prev = cur;
                                 continue;
                             }
                         }
                     }
-                    if (!ch)
+                    if (ch)
                         out << tmp.name;
                 }
             }
@@ -311,22 +344,25 @@ void analyser(std::istream& source, std::ostream& out) {
 
                 }*/
             case '{': {
-                detector.incLevel();
                 ++block_with_braces;
                 if (struct_mode) {
                     braces.push(1);
                     out << cur;
                     struct_mode = false;
+                    detector.incLevel();
                 }
                 else {
                     braces.push(0);
                     out << cur;
-                    out << "/* CHECKPOINT: BR (start) */\n";
+                    out << '\n';
                     ++string_counter;
-                    int tmp = detector.getLevel();
-                    while (tmp-- > 0) {
-                        out << "    ";
-                    }
+                    out << string_counter << ' ';
+                    printTabs(tab_size, detector.getLevel(), out);
+                    out << "// CHECKPOINT: BR (start)\n";
+                    ++string_counter;
+                    out << string_counter << ' ';
+                    detector.incLevel();
+                    printTabs(tab_size, detector.getLevel(), out);
                 }
                 break;
             }
@@ -335,24 +371,27 @@ void analyser(std::istream& source, std::ostream& out) {
                 detector.decLevel();
                 --block_with_braces;
                 if (braces.top() == 0) {
-                    out << "/* CHECKPOINT: BR (end) */";
+                    out << '\n';
+                    ++string_counter;
+                    out << string_counter << ' ';
+                    printTabs(tab_size, detector.getLevel(), out);
+                    out << "// CHECKPOINT: BR (end)\n";
+                    ++string_counter;
+                    out << string_counter << ' ';
+                    printTabs(tab_size, detector.getLevel(), out);
                 }
                 out << cur;
                 braces.pop();
                 if (block_without_braces && currentLayer.top() == block_with_braces) {
                     out << '\n';
                     ++string_counter;
+                    out << string_counter << ' ';
                     detector.decLevel();
-                    int tmp = detector.getLevel();
-                    while (tmp-- > 0) {
-                        out << "    ";
-                    }
+                    printTabs(tab_size, detector.getLevel(), out);
                     out << "// CHECKPOINT: WBR (end)\n";
                     ++string_counter;
-                    tmp = detector.getLevel();
-                    while (tmp-- > 0) {
-                        out << "    ";
-                    }
+                    out << string_counter << ' ';
+                    printTabs(tab_size, detector.getLevel(), out);
                     --block_without_braces;
                     currentLayer.pop();
                 }
@@ -360,23 +399,26 @@ void analyser(std::istream& source, std::ostream& out) {
             }
             case ';': {
                 out << cur;
-                if (block_without_braces) {
+                if (block_without_braces && currentLayer.top() == block_with_braces) {
                     --block_without_braces;
                     detector.decLevel();
                     out << '\n';
-                    int tmp = detector.getLevel();
-                    while (tmp-- > 0) {
-                        out << "    ";
-                    }
+                    ++string_counter;
+                    out << string_counter << ' ';
+                    printTabs(tab_size, detector.getLevel(), out);
                     out << "// CHECKPOINT: WBR (end)\n";
                     ++string_counter;
+                    out << string_counter << ' ';
+                    printTabs(tab_size, detector.getLevel(), out);
+                    currentLayer.pop();
                 }
                 break;
             }
             case '\n': {
-                string_counter++;
-                symbol_in_string_counter = 0;
+                ++string_counter;
                 out << cur;
+                out << string_counter << ' ';
+                symbol_in_string_counter = 0;
                 break;
             }
             case '\'': {
@@ -396,7 +438,7 @@ void analyser(std::istream& source, std::ostream& out) {
                 break;
             }
 
-            // TODO: rewrite this case
+                     // TODO: rewrite this case
             case '"': {
                 prev = cur;
                 source.get(cur);
@@ -416,33 +458,41 @@ void analyser(std::istream& source, std::ostream& out) {
                 break;
             }
             case '#': {
+                out << cur;
                 while (cur != '\n' && source.get(cur)) {
+                    out << cur;
                 }
-                out << "//preprocessor\n";
-                string_counter++;
+                if (!source.eof()) {
+                    ++string_counter;
+                    out << string_counter << ' ';
+                }
                 break;
             }
             case '/': {
                 if (prev == '/') {
+                    out << prev << cur;
                     while (cur != '\n' && source.get(cur)) {
+                        out << cur;
                     }
-                    out << "//one string comment\n";
-                    string_counter++;
+                    if (!source.eof()) {
+                        ++string_counter;
+                        out << string_counter << ' ';
+                    }
                 }
                 break;
             }
             case '*': {
                 if (prev == '/') {
-                    out << "/*multiple-line comment";
+                    out << prev << cur;
                     while (cur != '/' || prev != '*') {
                         prev = cur;
                         if (prev == '\n') {
-                            string_counter++;
-                            out << "\nmultiple-line comment";
+                            ++string_counter;
+                            out << string_counter << ' ';
                         }
                         source.get(cur);
+                        out << cur;
                     }
-                    out << "*/";
                 }
                 break;
             }
