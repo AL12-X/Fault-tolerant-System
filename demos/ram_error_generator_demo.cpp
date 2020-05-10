@@ -4,7 +4,7 @@
 #include "../tools/error_generators/ram_error_generator.hpp"
 
 int main() {
-    const int kArrSize = 30;
+    const int kArrSize = 20;
     char* charArr = new char[kArrSize];
     for (int i = 0; i < kArrSize; i++) {
         charArr[i] = 1;

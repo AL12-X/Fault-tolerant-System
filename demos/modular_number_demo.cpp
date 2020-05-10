@@ -11,8 +11,11 @@ int main() {
     ModularNumber<ULL> num2 = 1154_mo;
     FT::ModularNumber<ULL> res = num1 * num2;
 
-    std::cout << "Number: " << ULL(res) << ";" << std::endl;
+    std::cout << "Operand 1: " << num1 << std::endl;
+    std::cout << "Operand 2: " << num2 << std::endl;
+    std::cout << "Result: " << ULL(res) << std::endl;
 
+    std::cout << std::endl;
     std::cout << "Remainders: ";
     std::vector<int> remainders = res.getRemainders();
     for (int i = 0; i < remainders.size(); ++i) {

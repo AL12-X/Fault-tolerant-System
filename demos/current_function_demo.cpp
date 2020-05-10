@@ -27,7 +27,7 @@ int main() {
     foo(FT::Function::main);
     if (FT::currentFunction != FT::Function::main) throw std::runtime_error("IP register error");
 
-    // FT::currentFunction = FT::Function::bar;
+    FT::currentFunction = FT::Function::bar;
     bar(FT::Function::main);
     if (FT::currentFunction != FT::Function::main) throw std::runtime_error("IP register error");
 
